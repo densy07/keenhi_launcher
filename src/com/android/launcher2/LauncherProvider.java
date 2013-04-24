@@ -42,7 +42,9 @@ import android.database.sqlite.SQLiteStatement;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -59,6 +61,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class LauncherProvider extends ContentProvider {
     private static final String TAG = "Launcher.LauncherProvider";
@@ -210,9 +213,34 @@ public class LauncherProvider extends ContentProvider {
             // Populate favorites table with initial favorites
             SharedPreferences.Editor editor = sp.edit();
             editor.remove(DB_CREATED_BUT_DEFAULT_WORKSPACE_NOT_LOADED);
-            mOpenHelper.loadFavorites(mOpenHelper.getWritableDatabase(), R.xml.default_workspace);
+            mOpenHelper.loadFavorites(mOpenHelper.getWritableDatabase(), getDefaultWorkspace());
             editor.commit();
         }
+    }
+    
+    private final static String sSellProperty ="ro.product.sell_cid";
+    
+    private int getDefaultWorkspace(){
+        Resources resources  =getContext().getResources();
+        
+        final String layoutId ="default_workspace";
+        String sellCid =SystemProperties.get(sSellProperty, null);
+        if(sellCid==null){
+            if("NABI2-NV7A".equals(Build.MODEL)){
+                sellCid ="";
+            }
+            else{
+                sellCid="_uk";
+            }
+            
+        }
+        else{
+            sellCid ="_"+sellCid.toLowerCase();
+        }
+        
+        String newlayoutId=layoutId+sellCid;
+        int resourceId = resources.getIdentifier(newlayoutId, "xml", getContext().getPackageName());
+        return resourceId;
     }
 
     private static class DatabaseHelper extends SQLiteOpenHelper {
